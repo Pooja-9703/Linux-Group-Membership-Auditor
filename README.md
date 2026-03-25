@@ -1,4 +1,5 @@
 #Group-Membership-Auditor
+
 A Bash-based Linux system enumeration tool that audits group memberships by parsing /etc/group, providing structured output with GIDs, members, and reporting features for security analysis.
 
 <img width="1772" height="794" alt="group_membership_auditor" src="https://github.com/user-attachments/assets/f7c6e6d8-ab2b-449a-a891-6ead4e41f8fd" />
