@@ -13,7 +13,7 @@ filesystem_audit() {
     # --------------------------------------------------------
     print_subsection "World Writable Directories (First 20)"
 
-    directories=$(find / -xdev -type d -perm -0002 2>/dev/null | head -20)
+    directories=$(find / -xdev -type d -perm -0002 ! -perm -1000  2>/dev/null | head -20)
 
     if [[ -z "$directories" ]]; then
         print_success "No world writable directories found."
@@ -23,6 +23,8 @@ filesystem_audit() {
             "World writable directories were found." \
             "Review the directories below and remove unnecessary write permissions."
 
+	echo
+	echo "Affected Directories:"
         echo "$directories"
     fi
 
@@ -41,6 +43,8 @@ filesystem_audit() {
             "World writable files were found." \
             "Review the files below and remove unnecessary write permissions."
 
+	echo
+	echo "Affected Files:"
         echo "$files"
     fi
 
@@ -59,6 +63,8 @@ filesystem_audit() {
             "Files without a valid owner were found." \
             "Review the files below and assign them to a valid user."
 
+	echo
+	echo "Affected Files:"
         echo "$orphan_owner"
     fi
 
@@ -77,6 +83,8 @@ filesystem_audit() {
             "Files without a valid group were found." \
             "Assign the files below to an appropriate group."
 
+	echo
+	echo "Affected Files:"
         echo "$orphan_group"
     fi
 
@@ -85,16 +93,18 @@ filesystem_audit() {
     # --------------------------------------------------------
     print_subsection "Hidden Files in /home (First 20)"
 
-    hidden=$(find /home -type f -name ".*" 2>/dev/null | head -20)
+    hidden=$(find /home -maxdepth 2 -type f -name ".*" 2>/dev/null | head -20)
 
     if [[ -z "$hidden" ]]; then
         print_success "No hidden files found."
     else
         print_finding \
-            "LOW" \
+            "INFO" \
             "Hidden files were found in /home." \
             "Review the files below to ensure they are expected."
 
+	echo
+	echo "Hidden Files:"
         echo "$hidden"
     fi
 
