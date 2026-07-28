@@ -59,6 +59,8 @@ privilege_audit() {
             "World writable files were detected." \
             "Review the files below and remove unnecessary write permissions."
 
+	echo
+	echo "Affected Files:"
         echo "$world_writable"
     fi
 
