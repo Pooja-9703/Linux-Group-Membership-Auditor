@@ -6,9 +6,7 @@
 
 user_audit() {
 
-    print_separator
-    echo "                    USER AUDIT"
-    print_separator
+    print_section "USER AUDIT"
     echo
 
     # --------------------------------------------------------
