@@ -1,0 +1,21 @@
+# Generated reports
+reports/*.txt
+reports/*.json
+reports/*.html
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# JetBrains IDEs
+.idea/
