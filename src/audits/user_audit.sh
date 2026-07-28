@@ -126,17 +126,6 @@ user_audit() {
         do
             if [[ -z "$password_hash" ]]
             then
-                echo "$username"
-                passwordless_found=1
-            fi
-        done < /etc/shadow
-
-        passwordless_found=0
-
-        while IFS=: read -r username password_hash _
-        do
-            if [[ -z "$password_hash" ]]
-            then
                 if [[ "$passwordless_found" -eq 0 ]]; then
                     print_finding \
                         "HIGH" \
