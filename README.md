@@ -1,71 +1,207 @@
-#Group-Membership-Auditor
+# Linux Security Audit Toolkit
 
-A Bash-based Linux system enumeration tool that audits group memberships by parsing /etc/group, providing structured output with GIDs, members, and reporting features for security analysis.
+A modular Bash-based Linux Security Audit Toolkit that performs automated security checks on Linux systems. The toolkit helps administrators and security enthusiasts identify common security misconfigurations, review user and privilege settings, inspect filesystem permissions, and analyse SSH and password policies through an easy-to-use menu-driven interface.
 
-<img width="1772" height="794" alt="group_membership_auditor" src="https://github.com/user-attachments/assets/f7c6e6d8-ab2b-449a-a891-6ead4e41f8fd" />
+---
 
---------------------------------------------------------------------------------
-                                 README
---------------------------------------------------------------------------------
+## Features
 
-Script Name   : group_membership_auditor.sh  
-Author        : Pooja Dheeraj Sindhu  
-Date          : 25/03/26  
+### Security Audits
 
---------------------------------------------------------------------------------
-                                 DESCRIPTION
---------------------------------------------------------------------------------
-This script audits all system groups listed in `/etc/group` and displays or saves
-their group name, GID, and members in a clean tabular format.
+- User Audit
+  - List all system users
+  - Detect multiple UID 0 accounts
+  - Detect duplicate UIDs
+  - Identify passwordless accounts
 
-It provides an interactive menu for the user to:
+- Group Audit
+  - List system groups
+  - Display group memberships
+  - Detect duplicate GIDs
+  - Detect multiple GID 0 groups
 
-   - Save the report to a file (`group_membership_report.txt`)  
-   - View the report on screen  
-   - Display the total number of groups on the system  
-   - Exit the tool
+- Privilege Audit
+  - Display users with sudo privileges
+  - Detect world-writable files
+  - List SUID binaries
+  - List SGID binaries
 
---------------------------------------------------------------------------------
-                                 REQUIREMENTS
---------------------------------------------------------------------------------
- - Shell: Bash  
- - File: Must have read permissions for `/etc/group`  
- - Runs as a normal user (no root needed)  
+- Filesystem Security Audit
+  - Detect world-writable directories
+  - Detect world-writable files
+  - Find orphaned files
+  - Find orphaned groups
+  - Detect hidden files in home directories
+  - Display permissions of critical system files
 
---------------------------------------------------------------------------------
-                         FEATURES & ENHANCEMENTS
---------------------------------------------------------------------------------
- - Interactive and menu-based navigation  
- - Color-coded output for improved readability  
- - Option to view or save the report  
- - Graceful error handling if `/etc/group` is unreadable  
- - Shows total number of groups (extra feature)  
- - Uses temporary files for clean screen display  
- - Neatly formatted columns (Group Name, GID, Members)
+- SSH Configuration Audit
+  - Check SSH service status
+  - Verify PermitRootLogin
+  - Verify PasswordAuthentication
+  - Verify PubkeyAuthentication
+  - Verify PermitEmptyPasswords
+  - Check X11 Forwarding
+  - Check MaxAuthTries
+  - Display configured SSH port
 
---------------------------------------------------------------------------------
-                                HOW TO RUN
---------------------------------------------------------------------------------
+- Password Policy Audit
+  - Password expiration policy
+  - Password warning age
+  - Password hash algorithm
+  - Expired password detection
+  - Account lockout policy
 
-1. Give execute permission:
+---
 
-   chmod +x group_membership_auditor.sh
+## Utilities
 
-2. Run the script:
+- Large File Finder
+- Boot History Viewer
 
-    ./group_membership_auditor.sh
+---
 
-3. Choose an option from the menu:
-    
-                GROUP MEMBERSHIP AUDIT TOOL
--------------------------------------------------------------------------
-1. Save report to file (group_membership_report.txt)
-2. Display report on screen
-3. Show total number of groups
-4. Exit
--------------------------------------------------------------------------
-Enter your choice [1-4]:
+## Project Structure
 
-4. Once complete, open the file
+```
+Linux-Security-Audit-Toolkit/
+│
+├── audits/
+│   ├── user_audit.sh
+│   ├── group_audit.sh
+│   ├── privilege_audit.sh
+│   ├── filesystem_audit.sh
+│   ├── ssh_audit.sh
+│   └── password_policy_audit.sh
+│
+├── core/
+│   └── report_generator.sh
+│
+├── utilities/
+│   ├── large_file_finder_utility.sh
+│   └── boot_history_utility.sh
+│
+├── common.sh
+├── main.sh
+└── README.md
+```
 
-    group_membership_report.txt
+---
+
+## Requirements
+
+- Linux Operating System
+- Bash Shell
+- Standard Linux utilities
+
+The toolkit uses common Linux commands including:
+
+- awk
+- cut
+- find
+- grep
+- stat
+- systemctl
+- last
+- chage
+- getent
+
+Some security checks require root privileges.
+
+---
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/your-username/Linux-Security-Audit-Toolkit.git
+
+cd Linux-Security-Audit-Toolkit
+```
+
+Make the scripts executable:
+
+```bash
+chmod +x main.sh
+chmod +x common.sh
+chmod +x audits/*.sh
+chmod +x utilities/*.sh
+```
+
+---
+
+## Running the Toolkit
+
+Run as a normal user:
+
+```bash
+./main.sh
+```
+
+For complete security checks:
+
+```bash
+sudo ./main.sh
+```
+
+---
+
+## Main Menu
+
+```
+1. User Audit
+2. Group Audit
+3. Privilege Audit
+4. Filesystem Security Audit
+5. SSH Configuration Audit
+6. Password Policy Audit
+7. Full Security Audit
+8. System Utilities
+9. Exit
+```
+
+---
+
+## Sample Output
+
+```
+============================================================
+                Linux Security Audit Toolkit
+============================================================
+
+[INFO] Total Users : 28
+
+[SUCCESS] Only root has UID 0.
+
+[HIGH]
+
+Finding:
+  World writable files were detected.
+
+Recommendation:
+  Review the files below and remove unnecessary write permissions.
+```
+
+---
+
+## Future Improvements
+
+- HTML report generation
+- PDF report export
+- Cron audit
+- Firewall audit
+- Docker security audit
+- Log analysis
+- CIS Benchmark checks
+
+---
+
+## Author
+
+**Pooja Dheeraj Sindhu**
+
+---
+
+## License
+
+This project is intended for educational and learning purposes.
