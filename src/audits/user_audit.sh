@@ -71,7 +71,11 @@ user_audit() {
 
     if [[ "$uid_zero_count" -gt 1 ]]
     then
-        print_warning "Multiple UID 0 accounts detected."
+        print_finding \
+            "HIGH" \
+            "Multiple UID 0 accounts were detected." \
+            "Ensure only the root account has UID 0."
+
     else
         print_success "Only root has UID 0."
     fi
@@ -89,7 +93,10 @@ user_audit() {
     then
         print_success "No duplicate UIDs found."
     else
-        print_warning "Duplicate UIDs detected."
+        print_finding \
+        "HIGH" \
+        "Duplicate User IDs (UIDs) were detected." \
+        "Assign a unique UID to every user account."
 
         while read -r uid
         do
@@ -121,6 +128,24 @@ user_audit() {
         do
             if [[ -z "$password_hash" ]]
             then
+                echo "$username"
+                passwordless_found=1
+            fi
+        done < /etc/shadow
+
+        passwordless_found=0
+
+        while IFS=: read -r username password_hash _
+        do
+            if [[ -z "$password_hash" ]]
+            then
+                if [[ "$passwordless_found" -eq 0 ]]; then
+                    print_finding \
+                        "HIGH" \
+                        "One or more accounts have no password set." \
+                        "Configure a strong password or disable unused accounts."
+                fi
+
                 echo "$username"
                 passwordless_found=1
             fi
