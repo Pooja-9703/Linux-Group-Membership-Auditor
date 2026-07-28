@@ -76,7 +76,11 @@ group_audit() {
 
     if [[ "$gid_zero_count" -gt 1 ]]
     then
-        print_warning "Multiple GID 0 groups detected."
+        print_finding \
+            "HIGH" \
+            "Multiple groups with GID 0 were detected." \
+            "Ensure only the root group uses GID 0."
+
     else
         print_success "Only the root group has GID 0."
     fi
@@ -93,7 +97,10 @@ group_audit() {
         print_success "No duplicate GIDs found."
     else
 
-        print_warning "Duplicate GIDs detected."
+        print_finding \
+        "MEDIUM" \
+        "Duplicate Group IDs (GIDs) were detected." \
+        "Assign unique GIDs to each group to prevent permission conflicts."
 
         while read -r gid
         do
