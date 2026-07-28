@@ -133,3 +133,27 @@ file_exists() {
 directory_exists() {
     [[ -d "$1" ]]
 }
+
+# ============================================================
+# Print Section Header
+# ============================================================
+print_section() {
+
+    local title="$1"
+
+    print_separator
+    printf "%30s\n" "$title"
+    print_separator
+    echo
+}
+
+# ============================================================
+# Print Subsection Header
+# ============================================================
+print_subsection() {
+
+    local title="$1"
+
+    echo
+    print_info "$title"
+}
