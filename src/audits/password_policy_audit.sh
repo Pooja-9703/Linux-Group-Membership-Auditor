@@ -23,9 +23,15 @@ password_policy_audit() {
     max_days=$(grep -E "^PASS_MAX_DAYS" "$LOGIN_DEFS" | awk '{print $2}')
 
     if [[ -z "$max_days" ]]; then
-        print_warning "PASS_MAX_DAYS not configured."
+        print_finding \
+            "MEDIUM" \
+            "PASS_MAX_DAYS is not configured." \
+            "Configure PASS_MAX_DAYS in /etc/login.defs (recommended: 90 days)."
     elif [[ "$max_days" -gt 90 ]]; then
-        print_warning "Passwords expire after $max_days days."
+        print_finding \
+            "MEDIUM" \
+            "Passwords expire after $max_days days." \
+            "Reduce PASS_MAX_DAYS to 90 or fewer."
     else
         print_success "PASS_MAX_DAYS = $max_days"
     fi
@@ -38,9 +44,16 @@ password_policy_audit() {
     min_days=$(grep -E "^PASS_MIN_DAYS" "$LOGIN_DEFS" | awk '{print $2}')
 
     if [[ -z "$min_days" ]]; then
-        print_warning "PASS_MIN_DAYS not configured."
+        print_finding \
+            "LOW" \
+            "PASS_MIN_DAYS is not configured." \
+            "Configure PASS_MIN_DAYS to prevent immediate password changes."
+
     elif [[ "$min_days" -eq 0 ]]; then
-        print_warning "Users can immediately change passwords."
+        print_finding \
+            "LOW" \
+            "Users can immediately change passwords." \
+            "Set PASS_MIN_DAYS to at least 1."
     else
         print_success "PASS_MIN_DAYS = $min_days"
     fi
@@ -53,7 +66,10 @@ password_policy_audit() {
     warn_days=$(grep -E "^PASS_WARN_AGE" "$LOGIN_DEFS" | awk '{print $2}')
 
     if [[ -z "$warn_days" ]]; then
-        print_warning "PASS_WARN_AGE not configured."
+        print_finding \
+            "LOW" \
+            "PASS_WARN_AGE is not configured." \
+            "Configure PASS_WARN_AGE so users receive advance notice before password expiration."
     else
         print_success "PASS_WARN_AGE = $warn_days"
     fi
@@ -106,7 +122,10 @@ password_policy_audit() {
     if grep -Rq "pam_faillock.so" /etc/pam.d 2>/dev/null; then
         print_success "Account lockout policy detected."
     else
-        print_warning "No account lockout policy detected."
+        print_finding \
+            "HIGH" \
+            "No account lockout policy was detected." \
+            "Configure pam_faillock or an equivalent PAM module to limit failed login attempts."
     fi
 
     echo
