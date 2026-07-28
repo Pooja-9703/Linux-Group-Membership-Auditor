@@ -18,6 +18,11 @@ filesystem_audit() {
     if [[ -z "$directories" ]]; then
         print_success "No world writable directories found."
     else
+        print_finding \
+            "HIGH" \
+            "World writable directories were found." \
+            "Review the directories below and remove unnecessary write permissions."
+
         echo "$directories"
     fi
 
@@ -31,6 +36,11 @@ filesystem_audit() {
     if [[ -z "$files" ]]; then
         print_success "No world writable files found."
     else
+        print_finding \
+            "HIGH" \
+            "World writable files were found." \
+            "Review the files below and remove unnecessary write permissions."
+
         echo "$files"
     fi
 
@@ -44,6 +54,11 @@ filesystem_audit() {
     if [[ -z "$orphan_owner" ]]; then
         print_success "No orphaned owner files found."
     else
+        print_finding \
+            "MEDIUM" \
+            "Files without a valid owner were found." \
+            "Review the files below and assign them to a valid user."
+
         echo "$orphan_owner"
     fi
 
@@ -57,6 +72,11 @@ filesystem_audit() {
     if [[ -z "$orphan_group" ]]; then
         print_success "No orphaned group files found."
     else
+        print_finding \
+            "MEDIUM" \
+            "Files without a valid group were found." \
+            "Assign the files below to an appropriate group."
+
         echo "$orphan_group"
     fi
 
@@ -70,6 +90,11 @@ filesystem_audit() {
     if [[ -z "$hidden" ]]; then
         print_success "No hidden files found."
     else
+        print_finding \
+            "LOW" \
+            "Hidden files were found in /home." \
+            "Review the files below to ensure they are expected."
+
         echo "$hidden"
     fi
 
