@@ -28,7 +28,10 @@ ssh_audit() {
     if systemctl is-active --quiet ssh 2>/dev/null || systemctl is-active --quiet sshd 2>/dev/null; then
         print_success "SSH service is running."
     else
-        print_warning "SSH service is not running."
+    print_finding \
+        "LOW" \
+        "SSH service is not running." \
+        "Start the SSH service if remote administration is required."
     fi
 
     # --------------------------------------------------------
@@ -49,7 +52,10 @@ ssh_audit() {
     if [[ "$value" == "no" ]]; then
         print_success "Root login is disabled."
     else
-        print_warning "Root login is enabled or not explicitly disabled."
+    print_finding \
+        "HIGH" \
+        "Root SSH login is enabled or not explicitly disabled." \
+        "Set 'PermitRootLogin no' in /etc/ssh/sshd_config."
     fi
 
     # --------------------------------------------------------
@@ -62,7 +68,10 @@ ssh_audit() {
     if [[ "$value" == "no" ]]; then
         print_success "Password authentication is disabled."
     else
-        print_warning "Password authentication is enabled."
+    print_finding \
+        "MEDIUM" \
+        "Password authentication is enabled." \
+        "Disable password authentication and use SSH key authentication."
     fi
 
     # --------------------------------------------------------
@@ -75,7 +84,10 @@ ssh_audit() {
     if [[ "$value" == "yes" ]]; then
         print_success "Public key authentication is enabled."
     else
-        print_warning "Public key authentication is disabled."
+    print_finding \
+        "MEDIUM" \
+        "Public key authentication is disabled." \
+        "Enable 'PubkeyAuthentication yes' in the SSH configuration."
     fi
 
     # --------------------------------------------------------
@@ -88,7 +100,10 @@ ssh_audit() {
     if [[ "$value" == "no" ]]; then
         print_success "Empty passwords are not allowed."
     else
-        print_warning "Empty passwords may be allowed."
+    print_finding \
+        "HIGH" \
+        "Empty passwords may be allowed for SSH logins." \
+        "Set 'PermitEmptyPasswords no' in /etc/ssh/sshd_config."
     fi
 
     # --------------------------------------------------------
@@ -116,7 +131,10 @@ ssh_audit() {
     elif [[ "$value" -le 4 ]]; then
         print_success "MaxAuthTries = $value"
     else
-        print_warning "MaxAuthTries is set to $value."
+    print_finding \
+        "LOW" \
+        "MaxAuthTries is set to $value." \
+        "Reduce MaxAuthTries to 4 or fewer to limit brute-force attempts."
     fi
 
     # --------------------------------------------------------
