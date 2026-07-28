@@ -8,7 +8,9 @@ ssh_audit() {
 
     print_section "SSH CONFIGURATION AUDIT"
 
-    SSH_CONFIG="/etc/ssh/sshd_config"
+    local SSH_CONFIG="/etc/ssh/sshd_config"
+    local value
+    local port
 
     # --------------------------------------------------------
     # Check if SSH is installed
@@ -38,7 +40,10 @@ ssh_audit() {
     # Check Configuration File
     # --------------------------------------------------------
     if [[ ! -f "$SSH_CONFIG" ]]; then
-        print_error "SSH configuration file not found."
+	print_info "OpenSSH Server is not configured on this system."
+	echo
+	print_success "SSH Configuration Audit Completed."
+	print_separator
         return
     fi
 
