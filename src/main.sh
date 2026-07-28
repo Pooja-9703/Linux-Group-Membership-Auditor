@@ -31,8 +31,8 @@ source "$SCRIPT_DIR/audits/password_policy_audit.sh"
 # -------------------------
 # Load Utility Modules
 # -------------------------
-source "$SCRIPT_DIR/utilities/large_file_finder.sh"
-source "$SCRIPT_DIR/utilities/boot_history.sh"
+source "$SCRIPT_DIR/utilities/large_file_finder_utility.sh"
+source "$SCRIPT_DIR/utilities/boot_history_utility.sh"
 
 # ============================================================
 # Display Application Banner
@@ -83,7 +83,7 @@ show_menu() {
     echo "5. SSH Configuration Audit"
     echo "6. Password Policy Audit"
     echo "7. Full Security Audit"
-    echo "8. Utilities"
+    echo "8. System Utilities"
     echo "9. Exit"
     echo
 }
@@ -97,12 +97,22 @@ utilities_menu() {
     do
         clear
 
-        echo "================ Utilities ================"
-        echo
-        echo "1. Large File Finder"
-        echo "2. Boot History"
-        echo "3. Back"
-        echo
+	echo "============================================================"
+	echo "                     UTILITIES MENU"
+	echo "============================================================"
+	echo
+	echo "Available Tools"
+	echo
+	echo "1. Large File Finder"
+	echo "   Find files larger than a specified size."
+	echo
+	echo "2. Boot History"
+	echo "   Display previous system boot history."
+	echo
+	echo "3. Return to Main Menu"
+	echo
+	echo "============================================================"
+	echo
 
         read -rp "Enter your choice: " utility_choice
 
@@ -110,12 +120,14 @@ utilities_menu() {
 
             1)
                 large_file_finder
-                read -rp "Press Enter to continue..."
+                echo
+		read -rp "Press Enter to return to the Utilities Menu..."
                 ;;
 
             2)
                 boot_history
-                read -rp "Press Enter to continue..."
+		echo
+		read -rp "Press Enter to return to the Utilities Menu..."
                 ;;
 
             3)
@@ -123,7 +135,7 @@ utilities_menu() {
                 ;;
 
             *)
-                echo "Invalid option."
+		print_error "Invalid option."
                 sleep 1
                 ;;
         esac
