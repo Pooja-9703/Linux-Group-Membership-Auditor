@@ -2,50 +2,72 @@
 
 ## Overview
 
-The **Group Audit** module examines Linux groups and their memberships to identify potential security issues related to group configuration and privilege management. It reviews system groups, verifies group memberships, and detects potentially dangerous configurations such as duplicate Group IDs (GIDs) and multiple groups with GID 0.
+The **Group Audit** module examines Linux groups and their memberships to identify security misconfigurations that may affect access control and privilege management. It reviews configured groups, verifies user memberships, detects duplicate Group IDs (GIDs), and identifies multiple groups with GID 0.
 
-Groups are a fundamental part of Linux's permission model. Proper group management simplifies permission administration, supports the principle of least privilege, and reduces the need to grant excessive permissions directly to individual users.
+Linux groups simplify permission management by allowing administrators to assign permissions to a collection of users instead of configuring permissions individually. Proper group management supports the **Principle of Least Privilege (PoLP)** and reduces the risk of excessive permissions.
 
 ---
 
 ## Learning Objectives
 
-After reading this document, you should understand:
+After reading this document, you should be able to:
 
-- What Linux groups are and why they exist.
-- The difference between primary and supplementary groups.
-- What a Group ID (GID) is.
-- The purpose of the `/etc/group` file.
-- Why duplicate GIDs and multiple GID 0 groups can create security risks.
-- How the Linux Security Audit Toolkit performs group-related security checks.
+- Explain the purpose of Linux groups.
+- Understand how Group IDs (GIDs) are used.
+- Differentiate between primary and supplementary groups.
+- Describe the purpose of the `/etc/group` file.
+- Explain why duplicate GIDs and multiple GID 0 groups are security concerns.
+- Understand how the Linux Security Audit Toolkit performs group-related security checks.
 
 ---
 
-# Linux Groups
+# Understanding Linux Groups
 
-A Linux group is a collection of user accounts that share common permissions.
+A Linux group is a collection of users that share common permissions.
 
-Instead of assigning permissions to every individual user, permissions can be granted to an entire group.
+Instead of granting permissions to each user individually, administrators assign permissions to a group.
 
-For example:
+Example:
 
 ```text
-Developers Group
+developers
 
 ├── Alice
 ├── Bob
 └── Charlie
 ```
 
-If a directory belongs to the **developers** group, every member of that group can access it according to the assigned group permissions.
+If a directory belongs to the **developers** group, every member of that group receives the permissions assigned to the group.
 
-This approach simplifies permission management, especially on systems with many users.
+This simplifies permission management and improves scalability on multi-user systems.
+
+---
+
+# Why Groups Matter
+
+Without groups, every file permission would need to be configured for individual users.
+
+Example:
+
+```text
+Project Directory
+
+↓
+
+Owner      : Alice
+Group      : developers
+Permissions: rwxrwx---
+```
+
+Every member of the **developers** group can collaborate without assigning permissions individually.
+
+Groups also help implement the **Principle of Least Privilege**, ensuring users receive only the access required for their responsibilities.
 
 ---
 
 # Understanding Group IDs (GIDs)
 
-Every Linux group is assigned a unique numerical identifier called the **Group ID (GID)**.
+Every Linux group is assigned a numerical identifier called the **Group ID (GID)**.
 
 Example:
 
@@ -54,23 +76,28 @@ Group Name : developers
 GID        : 1001
 ```
 
-Although administrators work with group names, Linux internally uses the GID when evaluating group ownership and permissions.
+Although administrators work with group names, Linux internally uses the GID when determining group ownership and permissions.
+
+Just as Linux identifies users by UID, it identifies groups by GID.
 
 ---
 
 # Primary vs Supplementary Groups
 
-Every user has one **primary group** and may belong to multiple **supplementary groups**.
+Every Linux user belongs to:
+
+- One **Primary Group**
+- Zero or more **Supplementary Groups**
 
 Example:
 
 ```text
-User: alice
+User : alice
 
-Primary Group:
+Primary Group
     developers
 
-Supplementary Groups:
+Supplementary Groups
     docker
     sudo
     audio
@@ -78,11 +105,11 @@ Supplementary Groups:
 
 ### Primary Group
 
-The primary group is assigned when a user account is created and is typically used as the default group ownership for new files created by that user.
+The primary group is assigned when the user account is created and becomes the default group ownership for newly created files.
 
 ### Supplementary Groups
 
-Supplementary groups provide additional permissions without changing the user's primary group.
+Supplementary groups grant additional permissions without changing the user's primary group.
 
 For example:
 
@@ -95,12 +122,12 @@ Member of docker group
 
 ↓
 
-Can manage Docker without being root
+Allowed to manage Docker containers
 ```
 
 ---
 
-# The /etc/group File
+# The `/etc/group` File
 
 Linux stores group information in the `/etc/group` file.
 
@@ -119,33 +146,7 @@ Field breakdown:
 | GID | Group Identifier |
 | Members | Comma-separated list of users |
 
-Unlike `/etc/passwd`, the `/etc/group` file stores information about group memberships rather than user accounts.
-
----
-
-# Why Groups Matter
-
-Groups make permission management scalable.
-
-Instead of assigning permissions to every user individually:
-
-```text
-File
-
-↓
-
-Owner
-Group
-Others
-```
-
-Linux evaluates:
-
-1. Is the user the owner?
-2. Is the user a member of the file's group?
-3. Otherwise, use "Others" permissions.
-
-This permission hierarchy is one of the core concepts of Linux access control.
+Unlike `/etc/passwd`, this file stores information about groups rather than user accounts.
 
 ---
 
@@ -157,13 +158,13 @@ The Group Audit module performs the following checks.
 
 ## 1. List All System Groups
 
-The toolkit lists every configured group.
+The toolkit enumerates every configured group.
 
-Purpose:
+**Purpose**
 
-- Review existing groups.
+- Review configured groups.
 - Identify unnecessary or obsolete groups.
-- Verify expected group configurations.
+- Verify expected system configuration.
 
 ---
 
@@ -171,13 +172,13 @@ Purpose:
 
 The toolkit displays users belonging to each group.
 
-Purpose:
+**Purpose**
 
 - Verify privileged group memberships.
-- Detect unauthorized users in sensitive groups.
 - Review access assignments.
+- Detect unauthorized users in sensitive groups.
 
-Administrators should periodically review memberships of groups such as:
+Common privileged groups include:
 
 - sudo
 - wheel
@@ -185,13 +186,13 @@ Administrators should periodically review memberships of groups such as:
 - adm
 - lpadmin
 
-These groups often grant elevated privileges or access to sensitive system resources.
+Membership in these groups should be reviewed periodically.
 
 ---
 
 ## 3. Duplicate GIDs
 
-The toolkit searches for groups that share the same Group ID.
+The toolkit searches for groups sharing the same Group ID.
 
 Example:
 
@@ -203,22 +204,24 @@ engineering
 GID = 1001
 ```
 
-Because Linux uses the GID internally, duplicate GIDs can cause permission ambiguity and make access control difficult to manage.
+Because Linux uses the GID internally, duplicate GIDs can lead to permission ambiguity and make access control difficult to manage.
 
-Although duplicate GIDs are uncommon, they may result from configuration mistakes or improper account migrations.
+Although uncommon, duplicate GIDs may occur due to manual configuration errors or account migrations.
 
 ---
 
 ## 4. Multiple GID 0 Groups
 
-Normally:
+Normally, only the **root** group should have GID 0.
+
+Example:
 
 ```text
 root
 GID = 0
 ```
 
-Dangerous example:
+Potentially insecure configuration:
 
 ```text
 root
@@ -231,68 +234,170 @@ operators
 GID = 0
 ```
 
-Creating additional groups with GID 0 can unintentionally grant users privileged group ownership and complicate permission auditing.
+Additional groups with GID 0 increase the risk of unintended privileged access and complicate permission auditing.
 
-Unless specifically required, only the **root** group should have GID 0.
+---
+
+# Common Attack Scenarios
+
+## Excessive Group Membership
+
+A user is accidentally added to the **sudo** group.
+
+Although the account was intended to be a standard user, it now has administrative privileges.
+
+Regular group audits help identify excessive permissions before they are abused.
+
+---
+
+## Duplicate GID Misconfiguration
+
+Two different groups are assigned the same GID.
+
+Because Linux uses the GID internally, users in one group may receive unintended access to files owned by the other group.
+
+---
+
+## Forgotten Administrative Groups
+
+Temporary administrative groups created during maintenance are never removed.
+
+Over time, these groups accumulate unnecessary members, increasing the attack surface.
+
+Periodic group reviews help prevent privilege creep.
+
+---
+
+# Manual Verification
+
+The following commands can be used to manually verify the same information inspected by the toolkit.
+
+### List all groups
+
+```bash
+cut -d: -f1 /etc/group
+```
+
+---
+
+### Display group memberships
+
+```bash
+getent group
+```
+
+---
+
+### Find duplicate GIDs
+
+```bash
+cut -d: -f3 /etc/group | sort | uniq -d
+```
+
+---
+
+### Find groups with GID 0
+
+```bash
+awk -F: '$3 == 0 {print $1}' /etc/group
+```
+
+---
+
+# Commands Used in This Audit
+
+| Command | Purpose |
+|---------|---------|
+| `getent` | Retrieve group information from the system database. |
+| `cut` | Extract GID values from `/etc/group`. |
+| `awk` | Process and format group information. |
+| `sort` | Sort GIDs before duplicate detection. |
+| `uniq` | Identify duplicate GIDs. |
+| `grep` | Search for specific group names or patterns. |
 
 ---
 
 # How the Toolkit Implements These Checks
 
-The Group Audit module gathers information from the Linux group database and performs several validation steps.
-
 High-level workflow:
 
 ```text
-Read group database
+Read /etc/group
 
-↓
+        │
 
-Extract group names
+        ▼
 
-↓
+Extract Group Names
 
-Extract GIDs
+        │
 
-↓
+        ▼
 
-Display memberships
+Display Memberships
 
-↓
+        │
 
-Identify duplicate GIDs
+        ▼
 
-↓
+Check Duplicate GIDs
 
-Check for multiple GID 0 groups
+        │
 
-↓
+        ▼
 
-Generate findings
+Check GID 0 Groups
+
+        │
+
+        ▼
+
+Generate Findings
 ```
 
-The implementation relies on standard Linux utilities such as:
+The toolkit performs read-only inspections using standard Linux utilities and does not modify any system configuration.
 
-- `getent`
-- `cut`
-- `awk`
-- `sort`
-- `uniq`
-- `grep`
+---
 
-These utilities allow the toolkit to inspect group information without modifying any system configuration.
+# Expected Findings
+
+A properly configured Linux system should typically have:
+
+- One group with GID 0 (`root`)
+- No duplicate GIDs
+- Appropriate membership in privileged groups
+- No obsolete or unused administrative groups
+
+---
+
+# Severity Levels
+
+| Severity | Meaning |
+|----------|---------|
+| **INFO** | Informational result requiring no action. |
+| **LOW** | Minor configuration issue. |
+| **MEDIUM** | Configuration should be reviewed. |
+| **HIGH** | Configuration presents a significant security risk. |
 
 ---
 
 # Security Best Practices
 
-- Follow the principle of least privilege.
-- Regularly review group memberships.
+- Follow the Principle of Least Privilege.
+- Periodically review group memberships.
 - Remove unused groups.
 - Avoid duplicate GIDs.
-- Ensure only the root group uses GID 0.
-- Restrict membership in privileged groups such as `sudo` and `wheel`.
-- Periodically audit group configurations on production systems.
+- Restrict membership in privileged groups such as `sudo`, `wheel`, and `docker`.
+- Ensure only the `root` group uses GID 0.
+- Perform regular security audits to identify permission drift.
+
+---
+
+# Related Documentation
+
+- User Audit
+- Privilege Audit
+- Filesystem Security Audit
 
 ---
 
@@ -303,7 +408,7 @@ These utilities allow the toolkit to inspect group information without modifying
 - `man groupmod`
 - `man gpasswd`
 - `man getent`
-- Linux Filesystem Hierarchy Standard (FHS)
-- CIS Linux Benchmark
+- CIS Benchmarks for Linux
+- NIST SP 800-53 AC-2 (Account Management)
 - Red Hat Enterprise Linux Security Guide
 - Ubuntu Server Guide
