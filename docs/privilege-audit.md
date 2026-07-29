@@ -2,79 +2,77 @@
 
 ## Overview
 
-The **Privilege Audit** module examines user privileges and file permissions to identify configurations that could allow unauthorized users to gain elevated access. It reviews users with administrative privileges, detects insecure file permissions, and identifies special permission bits that may introduce privilege escalation risks.
+The **Privilege Audit** module evaluates privilege-related configurations on a Linux system to identify security risks that could lead to unauthorized administrative access or privilege escalation. It reviews users with administrative privileges, searches for insecure file permissions, and identifies executables with special permission bits such as **SUID** and **SGID**.
 
-Privilege management is a fundamental aspect of Linux security. Improperly configured privileges can allow attackers to execute administrative commands, modify sensitive files, or gain complete control of a system.
+Proper privilege management is one of the most critical aspects of Linux security. Excessive permissions, misconfigured files, or unnecessary privileged executables can significantly increase the attack surface of a system.
 
 ---
 
 ## Learning Objectives
 
-After reading this document, you should understand:
+After reading this document, you should be able to:
 
-- What privileges are in Linux.
-- The principle of least privilege.
-- How `sudo` works.
-- What SUID and SGID are.
-- Why world-writable files are dangerous.
-- How attackers abuse permission misconfigurations.
-- How the Linux Security Audit Toolkit performs privilege-related security checks.
+- Explain the concept of privileges in Linux.
+- Understand the Principle of Least Privilege (PoLP).
+- Describe how `sudo` works.
+- Explain the purpose of SUID and SGID.
+- Understand why world-writable files are dangerous.
+- Perform manual privilege-related security checks.
+- Understand how the Linux Security Audit Toolkit audits privilege configurations.
 
 ---
 
 # Understanding Privileges
 
-A privilege determines what actions a user or process is permitted to perform on a Linux system.
+A privilege defines what actions a user or process is permitted to perform on a Linux system.
 
 Examples include:
 
 - Reading files
-- Writing files
+- Modifying files
 - Executing programs
-- Managing users
 - Installing software
+- Creating users
 - Changing system configuration
 
-Linux grants these privileges based on:
+Linux determines these privileges using:
 
 - User ownership
 - Group ownership
 - File permissions
 - Special permission bits
-- Capabilities (advanced feature)
+- Security policies
 
-The root user has unrestricted privileges, while regular users operate with limited permissions.
+The **root** user has unrestricted privileges, while regular users operate with limited permissions.
 
 ---
 
-# The Principle of Least Privilege
+# Principle of Least Privilege (PoLP)
 
-The **Principle of Least Privilege (PoLP)** states that users and processes should have only the permissions required to perform their intended tasks.
+The **Principle of Least Privilege** states that users, applications, and services should be granted only the permissions necessary to perform their intended tasks.
 
-For example:
+Example:
 
 ```text
-Web Server
+Database Server
 
 Needs:
-✓ Read website files
-✓ Bind to network ports
+✓ Read database files
+✓ Write database files
 
-Does NOT need:
-✗ Create user accounts
-✗ Modify system configuration
-✗ Access another user's files
+Does NOT Need:
+✗ Modify system users
+✗ Install software
+✗ Change firewall rules
 ```
 
-Applying least privilege reduces the impact of accidental mistakes and limits the damage an attacker can cause after compromising an account.
+Applying least privilege reduces the impact of configuration mistakes and limits what an attacker can do after compromising an account.
 
 ---
 
 # Administrative Privileges and sudo
 
-Linux systems discourage logging in directly as the root user for everyday administration.
-
-Instead, authorized users temporarily elevate their privileges using the `sudo` command.
+Rather than logging in directly as the root user, Linux systems commonly use the **sudo** mechanism to grant temporary administrative privileges.
 
 Example:
 
@@ -82,63 +80,20 @@ Example:
 sudo apt update
 ```
 
-When a user runs a command with `sudo`, the system checks whether that user is authorized according to the `/etc/sudoers` configuration or associated policy files.
+When a user executes a command using `sudo`, Linux verifies whether that user is authorized according to the **sudoers policy**.
 
-Using `sudo` instead of logging in as root improves accountability because administrative actions can be associated with individual user accounts.
+Benefits of using `sudo` include:
 
----
-
-# Understanding Linux File Permissions
-
-Every file and directory has three permission sets:
-
-```text
-Owner
-
-Group
-
-Others
-```
-
-Each permission set contains:
-
-- Read (r)
-- Write (w)
-- Execute (x)
-
-Example:
-
-```text
--rwxr-xr--
-```
-
-Breakdown:
-
-```text
-Owner : rwx
-Group : r-x
-Others: r--
-```
-
-These permissions determine who can access or modify a file.
+- Individual accountability
+- Reduced use of the root account
+- Controlled privilege delegation
+- Improved auditing of administrative actions
 
 ---
 
-# Special Permission Bits
+# Set User ID (SUID)
 
-Linux provides three special permission bits:
-
-- SUID
-- SGID
-- Sticky Bit
-
-This module focuses on SUID and SGID because they may affect privilege management.
-
----
-
-## Set User ID (SUID)
-
-When the **SUID** bit is set on an executable file, the program runs with the permissions of the file owner rather than the user executing it.
+The **Set User ID (SUID)** permission bit allows an executable file to run with the permissions of its owner instead of the user executing it.
 
 Example:
 
@@ -152,21 +107,19 @@ Common legitimate example:
 /usr/bin/passwd
 ```
 
-Although ordinary users execute the `passwd` program, it temporarily runs with root privileges to update password information.
+Although a regular user executes the `passwd` program, it temporarily runs with the privileges of its owner (typically root) so that it can update password information.
 
-### Security Risks
+### Why Does It Matter?
 
-Poorly designed or vulnerable SUID programs may allow attackers to execute commands with elevated privileges, potentially leading to privilege escalation.
+Improperly configured or vulnerable SUID programs can allow attackers to execute commands with elevated privileges.
 
-Administrators should regularly review SUID binaries and remove unnecessary ones.
+Administrators should periodically review all SUID binaries and remove unnecessary ones.
 
 ---
 
-## Set Group ID (SGID)
+# Set Group ID (SGID)
 
-The **SGID** bit causes an executable to run with the permissions of the file's group.
-
-On directories, newly created files inherit the directory's group ownership.
+The **Set Group ID (SGID)** permission bit allows an executable to run with the permissions of the file's group.
 
 Example:
 
@@ -174,17 +127,19 @@ Example:
 -rwxr-sr-x
 ```
 
-### Security Risks
+When applied to directories, newly created files inherit the directory's group ownership instead of the creator's primary group.
 
-Unnecessary SGID binaries or directories may allow users to gain unintended access to shared resources.
+This behavior is commonly used in shared project directories.
 
-Regular auditing helps ensure SGID is applied only where required.
+### Why Does It Matter?
+
+Improper SGID configuration may unintentionally grant users access to sensitive files or shared resources.
 
 ---
 
 # World-Writable Files
 
-A world-writable file allows any user on the system to modify its contents.
+A world-writable file allows every user on the system to modify its contents.
 
 Example:
 
@@ -192,120 +147,231 @@ Example:
 -rw-rw-rw-
 ```
 
-### Why Is This Dangerous?
+Such files should be reviewed carefully because attackers may be able to:
 
-If a privileged application relies on a world-writable file, an attacker may be able to:
+- Modify application data
+- Replace executable scripts
+- Inject malicious code
+- Tamper with configuration files
 
-- Modify application behavior.
-- Inject malicious data.
-- Replace scripts.
-- Escalate privileges.
-
-World-writable files should be carefully reviewed and restricted whenever possible.
+Unless explicitly required, world-writable files should be avoided.
 
 ---
 
 # Security Checks Performed
 
-The Privilege Audit module performs the following checks.
+The Privilege Audit module performs the following security checks.
 
 ---
 
 ## 1. Users with sudo Privileges
 
-The toolkit identifies users who can execute commands with administrative privileges.
+The toolkit identifies users who have administrative privileges.
 
-Purpose:
+**Purpose**
 
 - Review privileged accounts.
-- Verify that administrative access is granted only to authorized users.
-- Support periodic access reviews.
+- Verify authorized administrative access.
+- Support periodic privilege reviews.
 
 ---
 
 ## 2. World-Writable Files
 
-The toolkit searches for files that are writable by all users.
+The toolkit searches for files that are writable by every user.
 
-Purpose:
+**Purpose**
 
-- Identify potential privilege escalation paths.
-- Detect insecure permission configurations.
-- Support file permission hardening.
+- Detect insecure permissions.
+- Reduce opportunities for privilege escalation.
+- Improve filesystem security.
 
 ---
 
 ## 3. SUID Binaries
 
-The toolkit lists executable files with the SUID permission bit.
+The toolkit lists executables with the SUID permission bit enabled.
 
-Purpose:
+**Purpose**
 
 - Review privileged executables.
-- Identify unexpected or unnecessary SUID programs.
-- Detect potential privilege escalation opportunities.
+- Identify unnecessary SUID programs.
+- Detect potential privilege escalation paths.
 
 ---
 
 ## 4. SGID Binaries
 
-The toolkit lists executable files with the SGID permission bit.
+The toolkit lists executables with the SGID permission bit enabled.
 
-Purpose:
+**Purpose**
 
-- Review shared privilege mechanisms.
-- Detect unnecessary SGID executables.
-- Support secure permission management.
+- Review group-based privilege delegation.
+- Detect unnecessary SGID binaries.
+- Verify secure permission management.
+
+---
+
+# Common Attack Scenarios
+
+## Excessive sudo Privileges
+
+A user is accidentally granted unrestricted `sudo` access.
+
+If the account is compromised, an attacker immediately gains administrative control over the system.
+
+---
+
+## Vulnerable SUID Binary
+
+A vulnerable SUID executable contains a programming flaw that allows arbitrary command execution.
+
+Because the program runs with elevated privileges, an attacker may obtain root access.
+
+---
+
+## World-Writable Startup Script
+
+A startup script executed by a privileged service is world-writable.
+
+An attacker modifies the script, causing malicious commands to execute the next time the service starts.
+
+---
+
+## Misconfigured Shared Directory
+
+A shared directory uses SGID but contains sensitive files accessible to unauthorized users.
+
+Improper group management results in unintended data exposure.
+
+---
+
+# Manual Verification
+
+The following commands can be used to manually perform the same privilege-related checks.
+
+### View sudo group members
+
+```bash
+getent group sudo
+```
+
+---
+
+### List SUID binaries
+
+```bash
+find / -xdev -type f -perm -4000 2>/dev/null
+```
+
+---
+
+### List SGID binaries
+
+```bash
+find / -xdev -type f -perm -2000 2>/dev/null
+```
+
+---
+
+### Find world-writable files
+
+```bash
+find / -xdev -type f -perm -0002 2>/dev/null
+```
+
+---
+
+# Commands Used in This Audit
+
+| Command | Purpose |
+|---------|---------|
+| `getent` | Retrieve group information for administrative groups. |
+| `find` | Locate world-writable files and SUID/SGID binaries. |
+| `stat` | Display file ownership and permission details. |
+| `grep` | Search for relevant configuration values. |
+| `awk` | Process structured command output. |
 
 ---
 
 # How the Toolkit Implements These Checks
 
-The Privilege Audit module performs several permission-based inspections.
-
 High-level workflow:
 
 ```text
-Identify privileged users
+Identify Administrative Users
 
-↓
+            │
 
-Search for world-writable files
+            ▼
 
-↓
+Locate World-Writable Files
 
-Locate SUID binaries
+            │
 
-↓
+            ▼
 
-Locate SGID binaries
+Locate SUID Binaries
 
-↓
+            │
 
-Generate findings
+            ▼
+
+Locate SGID Binaries
+
+            │
+
+            ▼
+
+Generate Findings
 ```
 
-The implementation uses standard Linux utilities, including:
+The toolkit performs read-only inspections using standard Linux utilities and does not modify any system configuration.
 
-- `find`
-- `stat`
-- `getent`
-- `grep`
-- `awk`
+---
 
-These commands allow the toolkit to inspect system permissions without modifying the system.
+# Expected Findings
+
+A properly configured Linux system should typically have:
+
+- A limited number of users with administrative privileges.
+- No unexpected world-writable files.
+- Only legitimate SUID binaries.
+- Only necessary SGID binaries.
+
+Unexpected findings should be reviewed to determine whether they are legitimate system requirements or potential security risks.
+
+---
+
+# Severity Levels
+
+| Severity | Meaning |
+|----------|---------|
+| **INFO** | Informational finding requiring no action. |
+| **LOW** | Minor security concern. |
+| **MEDIUM** | Configuration should be reviewed. |
+| **HIGH** | Significant security risk requiring immediate attention. |
 
 ---
 
 # Security Best Practices
 
-- Grant administrative privileges only to trusted users.
-- Review membership in the `sudo` or `wheel` group regularly.
 - Follow the Principle of Least Privilege.
+- Grant administrative privileges only to trusted users.
+- Review membership in privileged groups regularly.
 - Remove unnecessary SUID and SGID binaries.
-- Restrict world-writable files.
-- Monitor permission changes on critical system files.
-- Perform regular privilege audits as part of routine system maintenance.
+- Eliminate unnecessary world-writable files.
+- Periodically audit file permissions.
+- Monitor privilege changes on production systems.
+
+---
+
+# Related Documentation
+
+- User Audit
+- Group Audit
+- Filesystem Security Audit
+- Password Policy Audit
 
 ---
 
@@ -316,7 +382,7 @@ These commands allow the toolkit to inspect system permissions without modifying
 - `man chmod`
 - `man find`
 - `man stat`
-- Linux Filesystem Hierarchy Standard (FHS)
-- CIS Linux Benchmark
+- CIS Benchmarks for Linux
+- NIST SP 800-53 AC-6 (Least Privilege)
 - Red Hat Enterprise Linux Security Guide
 - Ubuntu Server Guide
