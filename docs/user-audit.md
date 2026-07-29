@@ -2,30 +2,30 @@
 
 ## Overview
 
-The **User Audit** module examines user accounts configured on a Linux system to identify common security issues related to user identities and authentication. It reviews user account information, detects potentially dangerous configurations, and helps administrators verify that user accounts follow security best practices.
+The **User Audit** module examines user accounts configured on a Linux system to identify common security misconfigurations related to user identities and authentication. It reviews account information stored by the operating system and performs several security checks that help administrators detect privileged accounts, duplicate identifiers, and weak authentication configurations.
 
-User account auditing is one of the first steps in securing a Linux system because every authenticated action is performed under a user identity. Misconfigured accounts, duplicate user identifiers, or improperly secured authentication settings can lead to privilege escalation, unauthorized access, and inaccurate audit trails.
+Since every process in Linux executes under the identity of a user account, auditing users is one of the first steps in assessing the overall security of a system.
 
 ---
 
 ## Learning Objectives
 
-After reading this document, you should understand:
+After reading this document, you should be able to:
 
-- How Linux identifies users.
-- The purpose of User IDs (UIDs).
-- The difference between regular users, system users, and the root account.
-- The role of `/etc/passwd` and `/etc/shadow`.
-- Why duplicate UIDs and multiple UID 0 accounts are security risks.
-- How the Linux Security Audit Toolkit performs user security checks.
+- Understand how Linux identifies users.
+- Explain the purpose of User IDs (UIDs).
+- Differentiate between regular, system, and root accounts.
+- Describe the purpose of `/etc/passwd` and `/etc/shadow`.
+- Understand why duplicate UIDs and multiple UID 0 accounts are security risks.
+- Explain how the Linux Security Audit Toolkit performs user-related security checks.
 
 ---
 
-# Linux User Management
+# Linux User Accounts
 
-Linux is a multi-user operating system. Every process executes under the identity of a user account.
+Linux is a multi-user operating system. Every process runs under the identity of a user account, and the permissions assigned to that account determine what the process can access or modify.
 
-Each user has:
+Each user account contains information such as:
 
 - Username
 - User ID (UID)
@@ -39,47 +39,50 @@ Example:
 alice:x:1000:1000:Alice:/home/alice:/bin/bash
 ```
 
-Linux uses the **UID**, not the username, to determine ownership and permissions.
+Although administrators typically identify users by name, Linux internally uses the **User ID (UID)** when making permission decisions.
 
 ---
 
-## Types of User Accounts
+# Types of User Accounts
 
-### Root User
+## Root User
 
-The root account is the system administrator.
+The **root** account is the system administrator.
 
 Characteristics:
 
 - UID = 0
-- Unrestricted access
+- Full access to the operating system
 - Can modify any file
-- Can install software
+- Can install or remove software
 - Can create or delete users
-- Can change permissions
+- Can change system configuration
 
 Because the root account bypasses nearly all permission checks, only one account should normally have UID 0.
 
 ---
 
-### Regular Users
+## Regular Users
 
-Regular users perform everyday tasks.
+Regular users perform everyday tasks such as logging into the system, creating files, and running applications.
 
 Typical UID ranges:
 
-- Ubuntu: 1000+
-- RHEL/CentOS: 1000+
+| Distribution | Default Starting UID |
+|--------------|---------------------:|
+| Ubuntu | 1000 |
+| Debian | 1000 |
+| RHEL / CentOS | 1000 |
 
-Regular users have limited permissions and require elevated privileges (such as `sudo`) for administrative tasks.
+Regular users have limited permissions and must use mechanisms such as `sudo` to perform administrative tasks.
 
 ---
 
-### System Users
+## System Users
 
-System users are created for services and background processes.
+System users are created for services and background processes rather than interactive logins.
 
-Examples include:
+Common examples include:
 
 - daemon
 - nobody
@@ -87,15 +90,13 @@ Examples include:
 - mysql
 - sshd
 
-These accounts usually cannot log in interactively and exist solely to isolate system services.
+These accounts typically have no valid login shell and exist to isolate system services from one another.
 
 ---
 
 # Understanding User IDs (UIDs)
 
-A **User ID (UID)** is the numerical identifier assigned to every user account.
-
-Although administrators recognize users by name, the Linux kernel uses the UID internally.
+Every user account is assigned a unique numerical identifier known as the **User ID (UID)**.
 
 Example:
 
@@ -104,13 +105,7 @@ Username : alice
 UID      : 1001
 ```
 
-When a process accesses a file, Linux compares the file owner's UID with the process's UID to determine whether access should be granted.
-
----
-
-## Why UID Matters
-
-Permissions are assigned to UIDs—not usernames.
+Although usernames are easier for humans to remember, the Linux kernel uses the UID internally when evaluating file ownership and permissions.
 
 For example:
 
@@ -126,17 +121,15 @@ Creates report.txt
 Owner = UID 1001
 ```
 
-If another account is accidentally assigned the same UID, Linux treats both accounts as the same owner for permission checks.
-
-This can lead to unauthorized access and inaccurate auditing.
+If another account is assigned the same UID, Linux treats both accounts as the same owner for permission checks.
 
 ---
 
-# Important Files
+# Important User Account Files
 
-## /etc/passwd
+## `/etc/passwd`
 
-The `/etc/passwd` file stores basic user account information.
+The `/etc/passwd` file stores basic information about every user account.
 
 Example:
 
@@ -147,22 +140,24 @@ root:x:0:0:root:/root:/bin/bash
 Field breakdown:
 
 | Field | Description |
-|------|-------------|
-| Username | Account name |
-| Password Placeholder | Usually `x` (actual password hash stored elsewhere) |
+|-------|-------------|
+| Username | User account name |
+| Password Placeholder | Usually `x`; password hash is stored in `/etc/shadow` |
 | UID | User Identifier |
 | GID | Primary Group Identifier |
-| Comment | User information |
-| Home Directory | Default login directory |
-| Login Shell | Shell executed after login |
+| GECOS | User information (full name, comments, etc.) |
+| Home Directory | User's default working directory |
+| Login Shell | Program started after login |
+
+The file is readable by all users because many applications need access to basic account information.
 
 ---
 
-## /etc/shadow
+## `/etc/shadow`
 
 The `/etc/shadow` file stores password hashes and password aging information.
 
-Unlike `/etc/passwd`, only privileged users can read this file.
+Unlike `/etc/passwd`, this file is readable only by privileged users.
 
 It contains:
 
@@ -171,36 +166,40 @@ It contains:
 - Password warning periods
 - Account expiration information
 
-Protecting `/etc/shadow` is essential because exposure of password hashes can facilitate offline password-cracking attacks.
+Restricting access to `/etc/shadow` helps prevent attackers from obtaining password hashes for offline password-cracking attacks.
 
 ---
 
 # Security Checks Performed
 
-The User Audit module performs the following checks.
+The User Audit module performs the following security checks.
+
+---
 
 ## 1. List All System Users
 
-The toolkit lists every configured user account.
+The toolkit enumerates every configured user account.
 
-Purpose:
+**Purpose**
 
-- Verify expected accounts
-- Identify unused accounts
-- Review service accounts
+- Review all user accounts.
+- Identify unused or unexpected accounts.
+- Verify service accounts.
 
 ---
 
 ## 2. Multiple UID 0 Accounts
 
-Normally:
+Normally, only the root account should have UID 0.
+
+Example:
 
 ```text
 root
 UID = 0
 ```
 
-Dangerous example:
+Potentially insecure configuration:
 
 ```text
 root
@@ -213,15 +212,15 @@ backup
 UID = 0
 ```
 
-Any account with UID 0 has full administrative privileges.
+Every account with UID 0 receives unrestricted administrative privileges.
 
-Multiple UID 0 accounts make accountability difficult and increase the attack surface.
+Maintaining multiple UID 0 accounts reduces accountability and increases the attack surface.
 
 ---
 
 ## 3. Duplicate UIDs
 
-The toolkit searches for multiple accounts sharing the same UID.
+The toolkit checks whether multiple accounts share the same UID.
 
 Example:
 
@@ -233,69 +232,101 @@ bob
 UID = 1001
 ```
 
-Because Linux authorizes access based on UID, duplicate UIDs may allow one user to access files owned by another.
+Since Linux authorizes access based on the UID rather than the username, duplicate UIDs may allow one account to access files owned by another.
+
+Duplicate UIDs also make system auditing and forensic investigations more difficult.
 
 ---
 
 ## 4. Passwordless Accounts
 
-The toolkit checks for accounts that do not require a password.
+The toolkit identifies accounts that do not require a password for authentication.
 
-Passwordless accounts may allow unauthorized logins if additional security controls are not in place.
+Passwordless accounts may increase the risk of unauthorized access if additional authentication controls are not implemented.
+
+Service accounts that are intentionally configured without passwords should still be reviewed to ensure they cannot be used for interactive logins.
+
+---
+
+# Common Attack Scenarios
+
+## Unauthorized Administrative Account
+
+An attacker who gains administrative access may create another account with UID 0 to maintain persistent root access while avoiding casual inspection of the root account.
+
+Regular user audits help identify unexpected UID 0 accounts.
+
+---
+
+## Duplicate UID Abuse
+
+An administrator accidentally assigns an existing UID to a new user.
+
+Although the usernames differ, Linux treats both accounts as the same owner for permission checks, allowing unintended access to files and directories.
+
+---
+
+## Forgotten User Accounts
+
+Former employee accounts that remain active may provide attackers with valid login credentials if the passwords are compromised or reused.
+
+Regular account reviews help identify unused accounts that should be disabled or removed.
 
 ---
 
 # How the Toolkit Implements These Checks
 
-The User Audit module reads user information from `/etc/passwd` and `/etc/shadow`.
+The User Audit module retrieves account information from the Linux user database and performs several validation steps.
 
 High-level workflow:
 
 ```text
-Read user database
+Read user account database
 
-↓
+        ↓
 
 Extract usernames and UIDs
 
-↓
+        ↓
 
-Count users
+Count user accounts
 
-↓
+        ↓
 
 Identify UID 0 accounts
 
-↓
+        ↓
 
 Detect duplicate UIDs
 
-↓
+        ↓
 
-Inspect password status
+Review password configuration
 
-↓
+        ↓
 
 Generate findings
 ```
 
-The implementation relies on standard Linux utilities such as:
+The implementation relies on standard Linux utilities, including:
 
 - `awk`
 - `cut`
+- `grep`
 - `sort`
 - `uniq`
-- `grep`
+
+These utilities allow the toolkit to inspect user account information without modifying the system.
 
 ---
 
 # Security Best Practices
 
 - Maintain only one UID 0 account whenever possible.
-- Remove unused user accounts.
+- Remove or disable unused user accounts.
 - Disable interactive logins for service accounts.
-- Review user accounts regularly.
 - Enforce strong password policies.
+- Review user accounts regularly.
 - Avoid shared user accounts.
 - Periodically audit `/etc/passwd` and `/etc/shadow`.
 
@@ -306,7 +337,9 @@ The implementation relies on standard Linux utilities such as:
 - `man passwd`
 - `man shadow`
 - `man useradd`
+- `man usermod`
+- `man userdel`
 - Linux Filesystem Hierarchy Standard (FHS)
-- CIS Linux Benchmark
+- CIS Benchmarks for Linux
 - Red Hat Enterprise Linux Security Guide
 - Ubuntu Server Guide
